@@ -264,18 +264,14 @@ namespace RazorWeb.Migrations
 
             modelBuilder.Entity("RazorWeb.Models.Product", b =>
                 {
-                    b.Property<long>("ProductID")
+                    b.Property<int>("ProductID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
+                        .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("ProductID"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ProductID"));
 
                     b.Property<bool?>("Active")
                         .HasColumnType("bit");
-
-                    b.Property<string>("AvailabilityStatus")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<long?>("BrandID")
                         .HasColumnType("bigint");
@@ -283,15 +279,25 @@ namespace RazorWeb.Migrations
                     b.Property<long?>("CategoryID")
                         .HasColumnType("bigint");
 
-                    b.Property<DateTime?>("DateOfPurchase")
+                    b.Property<DateTime>("CreateAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<decimal?>("Price")
-                        .HasColumnType("decimal(18,2)");
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ImageFileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(16, 2)
+                        .HasColumnType("decimal(16,2)");
 
                     b.Property<string>("ProductName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("ProductID");
 

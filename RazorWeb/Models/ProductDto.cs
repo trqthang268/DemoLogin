@@ -1,22 +1,21 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+
 namespace RazorWeb.Models
 {
-    public class Product
+    public class ProductDto
     {
-        [Key]
         public int ProductID { get; set; }
-        [MaxLength(100)]
+        [Required, MaxLength(100)]
         public string ProductName { get; set; }
+        [Required]
+        [StringLength(500, ErrorMessage = "Product description can't be longer than 500 characters.")]
         public string Description { get; set; }
-        [Precision(16, 2)]
-        public decimal Price { get; set; }
-        public string ImageFileName { get; set; }
-        public DateTime CreateAt { get; set; }
+        [Required]
+        [Range(0.01, 10000.00, ErrorMessage = "Price must be between 0.01 and 10000.00")] public decimal Price { get; set; }
+        public IFormFile? ImageFile { get; set; }
         public Nullable<long> CategoryID { get; set; }
         public Nullable<long> BrandID { get; set; }
         public Nullable<bool> Active { get; set; }
-        public virtual Brand Brand { get; set; }
-        public virtual Category Category { get; set; }
     }
 }

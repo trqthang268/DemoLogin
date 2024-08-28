@@ -49,6 +49,8 @@
     <Folder Include="Areas\Identity\Data\" />
     <Folder Include="Areas\Identity\Models\" />
     <Folder Include="Areas\Identity\Views\" />
+    <Folder Include="Migrations\" />
+    <Folder Include="wwwroot\products\" />
   </ItemGroup>
 
 </Project>

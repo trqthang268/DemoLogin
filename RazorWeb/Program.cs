@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using RazorWeb.Data;
@@ -17,7 +17,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 //    .AddEntityFrameworkStores<AppDbContext>()
 //    .AddDefaultTokenProviders();
 
-builder.Services.AddDefaultIdentity<AppUser>(options =>
+builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
 {
     // Thiết lập về Password
     options.Password.RequireDigit = false; // Không bắt phải có số
@@ -44,6 +44,7 @@ builder.Services.AddDefaultIdentity<AppUser>(options =>
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
 
 builder.Services.AddOptions(); // Kích hoạt Options
 

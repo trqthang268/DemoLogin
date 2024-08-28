@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using RazorWeb.Data;
 using RazorWeb.Models;
 
@@ -7,132 +9,208 @@ namespace RazorWeb.Controllers
     public class ProductsController : Controller
     {
         private readonly AppDbContext _context;
-        public ProductsController(AppDbContext context)
+        private readonly IWebHostEnvironment environment;
+        public ProductsController(AppDbContext context, IWebHostEnvironment environment)
         {
+            this.environment = environment;
             _context = context;
         }
-        public IActionResult Index(string search = "" , string SortColumn = "ProductID"
-            , string IconClass = "fa-sort-asc", int page = 1)
+        // GET: Products
+        public async Task<IActionResult> Index()
         {
-            // Search
-            List<Product> products = _context.Products.Where(row => 
-            row.ProductName.Contains(search)).ToList();
-            ViewBag.Search = search;
-
-            //Sort
-            ViewBag.SortColumn = SortColumn;
-            ViewBag.IconClass = IconClass;
-            if(SortColumn == "ProductID")
-            {
-                if(IconClass == "fa-sort-asc")
-                {
-                    products = products.OrderBy(row => row.ProductID).ToList();
-                }
-                else
-                {
-                    products = products.OrderByDescending(row => row.ProductID).ToList();
-                }
-            }
-            else if (SortColumn == "ProductName")
-            {
-                if (IconClass == "fa-sort-asc")
-                {
-                    products = products.OrderBy(row =>
-                    row.ProductName).ToList();
-                }
-                else
-                {
-                    products = products.OrderByDescending(row =>
-                    row.ProductName).ToList();
-                }
-            }
-            else if(SortColumn == "Price")
-            {
-                if (IconClass == "fa-sort-asc")
-                {
-                    products = products.OrderBy(row =>
-                    row.Price).ToList();
-                }
-                else
-                {
-                    products = products.OrderByDescending(row =>
-                    row.Price).ToList();
-                }
-            }
-
-            //Paging
-            int NoOfRecordPerPage = 5;
-            int NoOfPages = Convert.ToInt32(Math.Ceiling
-                (Convert.ToDouble(products.Count) / Convert.ToDouble(NoOfRecordPerPage)));
-            int NoOfRecordToSkip = (page - 1) * NoOfRecordPerPage;
-            ViewBag.Page = page;
-            ViewBag.NoOfPages = NoOfPages;
-            products = products.Skip(NoOfRecordToSkip).Take(NoOfRecordPerPage).ToList();
-
+            var products = await _context.Products.Include(p => p.Brand).Include(p => p.Category).ToListAsync();
             return View(products);
         }
 
-        public IActionResult Detail(long id)
+        // GET: Products/Details/5
+        public async Task<IActionResult> Details(int? id)
         {
-            Product pro = _context.Products.Where(
-                row => row.ProductID == id).FirstOrDefault();
-            return View(pro);
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var product = await _context.Products
+                .Include(p => p.Brand)
+                .Include(p => p.Category)
+                .FirstOrDefaultAsync(m => m.ProductID == id);
+            if (product == null)
+            {
+                return NotFound();
+            }
+
+            return View(product);
         }
 
+        // GET: Products/Create
         public IActionResult Create()
         {
-            ViewBag.Categories = _context.Categories.ToList();
-            ViewBag.Brands = _context.Brands.ToList();
+            ViewData["BrandID"] = new SelectList(_context.Brands, "BrandID", "BrandName");
+            ViewData["CategoryID"] = new SelectList(_context.Categories, "CategoryID", "CategoryName");
             return View();
         }
 
+        // POST: Products/Create
         [HttpPost]
-        public IActionResult Create(Product p)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(ProductDto productDto)
         {
-            _context.Products.Add(p);
-            _context.SaveChanges();
-            return RedirectToAction("Index");
+            if (productDto.ImageFile == null)
+            {
+                ModelState.AddModelError("ImageFile", "The Image file is required");
+            }
+            if (ModelState.IsValid)
+            {
+
+                string newFileName = DateTime.Now.ToString("yyyyMMddHHmmssfff");
+                newFileName += Path.GetExtension(productDto.ImageFile!.FileName);
+
+                string imageFullPath = environment.WebRootPath + "/products/" + newFileName;
+                using (var stream = System.IO.File.Create(imageFullPath))
+                {
+                    productDto.ImageFile.CopyTo(stream);
+                }
+
+                var product = new Product
+                {
+                    ProductName = productDto.ProductName,
+                    Description = productDto.Description,
+                    Price = productDto.Price,
+                    CategoryID = productDto.CategoryID,
+                    BrandID = productDto.BrandID,
+                    Active = productDto.Active,
+                    CreateAt = DateTime.Now,
+                    ImageFileName = newFileName
+                };
+
+                _context.Add(product);
+                await _context.SaveChangesAsync();
+                return RedirectToAction("Index", "Products");
+            }
+            ViewData["BrandID"] = new SelectList(_context.Brands, "BrandID", "BrandName", productDto.BrandID);
+            ViewData["CategoryID"] = new SelectList(_context.Categories, "CategoryID", "CategoryName", productDto.CategoryID);
+            return View(productDto);
         }
 
-        public IActionResult Edit(long id)
+        // GET: Products/Edit/5
+        public async Task<IActionResult> Edit(int? id)
         {
-            Product product = _context.Products.Where(
-                row => row.ProductID == id).FirstOrDefault();
-            ViewBag.Categories = _context.Categories.ToList();
-            ViewBag.Brands = _context.Brands.ToList();
+            var product = await _context.Products.FindAsync(id);
+            if (product == null)
+            {
+                return RedirectToAction("Index", "Products");
+            }
+
+            //create productDto from product
+            var productDto = new ProductDto
+            {
+                ProductName = product.ProductName,
+                Description = product.Description,
+                Price = product.Price,
+                CategoryID = product.CategoryID,
+                BrandID = product.BrandID,
+                Active = product.Active
+            };
+
+            ViewData["BrandID"] = new SelectList(_context.Brands, "BrandID", "BrandName", productDto.BrandID);
+            ViewData["CategoryID"] = new SelectList(_context.Categories, "CategoryID", "CategoryName", productDto.CategoryID);
+            ViewData["ProductId"] = product.ProductID;
+            ViewData["ImageFileName"] = product.ImageFileName;
+            ViewData["CreateAt"] = product.CreateAt.ToString("MM/dd/yyyy");
+            return View(productDto);
+        }
+
+        // POST: Products/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, ProductDto productDto)
+        {
+            var product = await _context.Products.FindAsync(id);
+            if (product == null)
+            {
+                return RedirectToAction("Index", "Products");
+            }
+            if (!ModelState.IsValid)
+            {
+                ViewData["BrandID"] = new SelectList(_context.Brands, "BrandID", "BrandName", productDto.BrandID);
+                ViewData["CategoryID"] = new SelectList(_context.Categories, "CategoryID", "CategoryName", productDto.CategoryID);
+                ViewData["ProductId"] = product.ProductID;
+                ViewData["ImageFileName"] = product.ImageFileName;
+                ViewData["CreateAt"] = product.CreateAt.ToString("MM/dd/yyyy");
+                return View(productDto);
+            }
+
+            //update the image file if we have a new image file
+            string newFileName = product.ImageFileName;
+            if (productDto.ImageFile != null)
+            {
+                newFileName = DateTime.Now.ToString("yyyyMMddHHmmssfff");
+                newFileName += Path.GetExtension(productDto.ImageFile!.FileName);
+
+                string imageFullPath = environment.WebRootPath + "/products/" + newFileName;
+                using (var stream = System.IO.File.Create(imageFullPath))
+                {
+                    productDto.ImageFile.CopyTo(stream);
+                }
+
+                //delete the old image
+                string oldImageFullPath = environment.WebRootPath + "/products/" + product.ImageFileName;
+                System.IO.File.Delete(oldImageFullPath);
+            }
+
+            //update the product in the database
+            product.ProductName = productDto.ProductName;
+            product.Description = productDto.Description;
+            product.Price = productDto.Price;
+            product.CategoryID = productDto.CategoryID;
+            product.BrandID = productDto.BrandID;
+            product.Active = productDto.Active;
+            product.ImageFileName = newFileName;
+
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("Index", "Products");
+        }
+
+        // GET: Products/Delete/5
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var product = await _context.Products
+                .Include(p => p.Brand)
+                .Include(p => p.Category)
+                .FirstOrDefaultAsync(m => m.ProductID == id);
+            if (product == null)
+            {
+                return NotFound();
+            }
+
             return View(product);
         }
 
-        [HttpPost]
-        public IActionResult Edit(Product pro)
+        // POST: Products/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            Product product = _context.Products.Where(row => row.ProductID == pro.ProductID).FirstOrDefault();
+            var product = await _context.Products.FindAsync(id);
+            if (product == null)
+            {
+                return NotFound();
+            }
 
-            //Update
-            product.ProductName = pro.ProductName;
-            product.Price = pro.Price;
-            product.DateOfPurchase = pro.DateOfPurchase;
-            product.AvailabilityStatus = pro.AvailabilityStatus;
-            product.CategoryID = pro.CategoryID;
-            product.BrandID = pro.BrandID;
-            product.Active = pro.Active;
-            _context.SaveChanges();
-            return RedirectToAction("Index");
-        }
-
-        public IActionResult Delete(long id)
-        {
-            Product product = _context.Products.Where(row => row.ProductID == id).FirstOrDefault();
-            return View(product);
-        }
-
-        [HttpPost]
-        public IActionResult Delete(long id, Product p)
-        {
-            Product product = _context.Products.Where(row => row.ProductID == id).FirstOrDefault();
             _context.Products.Remove(product);
-            _context.SaveChanges();
-            return RedirectToAction("Index");
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
+        }
+
+        private bool ProductExists(int id)
+        {
+            return _context.Products.Any(e => e.ProductID == id);
         }
     }
 }
