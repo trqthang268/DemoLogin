@@ -29,7 +29,7 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
 
     // Cấu hình Lockout - khóa user
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5); // Khóa 5 phút
-    options.Lockout.MaxFailedAccessAttempts = 5; // Thất bại 5 lần thì khóa
+    options.Lockout.MaxFailedAccessAttempts = 3; // Thất bại 3 lần thì khóa
     options.Lockout.AllowedForNewUsers = true;
 
     // Cấu hình về User.
@@ -40,7 +40,16 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
     // Cấu hình đăng nhập.
     options.SignIn.RequireConfirmedEmail = true;            // Cấu hình xác thực địa chỉ email
     options.SignIn.RequireConfirmedPhoneNumber = false;     // Xác thực số điện thoại
+    options.SignIn.RequireConfirmedAccount = true; 
 }).AddEntityFrameworkStores<AppDbContext>().AddDefaultTokenProviders(); ;
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/login/";
+    options.LogoutPath = "/logout/";
+    options.AccessDeniedPath = "/khongduoctuycap.html";
+
+});
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();

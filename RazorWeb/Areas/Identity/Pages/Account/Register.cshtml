@@ -1,4 +1,4 @@
-﻿@page "/dangky/"
+﻿@page "/register/"
 @model RegisterModel
 @{
     ViewData["Title"] = "Đăng ký";
@@ -12,6 +12,11 @@
             <h2>Đăng ký tài khoản mới.</h2>
             <hr />
             <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+            <div class="form-floating mb-3">
+                <input asp-for="Input.UserName" class="form-control" autocomplete="username" aria-required="true"  />
+                <label asp-for="Input.UserName">Tên Tài khoản</label>
+                <span asp-validation-for="Input.UserName" class="text-danger"></span>
+            </div>
             <div class="form-floating mb-3">
                 <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
                 <label asp-for="Input.Email">Địa chỉ Email</label>
@@ -39,8 +44,7 @@
                 {
                     <div>
                         <p>
-                            There are no external authentication services configured. See this <a href="https://go.microsoft.com/fwlink/?LinkID=532715">article
-                            about setting up this ASP.NET application to support logging in via external services</a>.
+                        Chưa có cấu hình    
                         </p>
                     </div>
                 }
