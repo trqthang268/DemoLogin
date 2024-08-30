@@ -70,6 +70,20 @@ builder.Services.AddTransient<IEmailSender, SendMailService>();
 
 builder.Services.AddSingleton<IdentityErrorDescriber, AppIdentityErrorDescriber>();
 
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AllowEditRole", policyBuilder =>
+    {
+        //Dieu kien cua policy
+        policyBuilder.RequireAuthenticatedUser();
+        //policyBuilder.RequireRole("Admin");
+        //policyBuilder.RequireRole("Editor");
+
+        policyBuilder.RequireClaim("canedit", "user", "post");
+
+    });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
